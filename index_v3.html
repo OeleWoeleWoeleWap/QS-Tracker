@@ -1,0 +1,233 @@
+<html>
+<head>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+	<script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+	
+	<link rel="stylesheet" type="text/css" href="style_v2.css">
+	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <title>Quality Score tracker</title>
+
+    <style type="text/css">
+    td.details-control {
+        background: url('https://www.datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://www.datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+    </style>
+
+</head>
+<body>   
+    <h2>Quality Score Tracker</h2>
+
+    <ul id="navigation" clientID="%" campaignID="%", adgroupID="%">
+        <li id="mcc"><a>ClickValue MCC</a></li>
+        <li id="client"><a></a></li>
+        <li id="campaign"><a></a></li>
+        <li id="adgroup"><a></a></li>
+    </ul>
+    <div id="tabs">
+
+    </div>
+
+    <div id='table_container'>
+        <table id="main_table" class="display cell-border" cellspacing="0" width="100%">
+            <thead>
+            </thead>
+    </table>
+
+    </div>
+</body>
+</html>
+
+<script type="text/javascript">
+    var numMonths = 13;
+    var table;
+    $(document).ready(function(){
+        loadTableHeaders("Client");
+        initTable();
+        loadData();
+    });
+
+    this.loadTableHeaders = function(type){
+        var months = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
+        var header = $('#table_container > table > thead');
+        header.append("<th></th>");
+        header.append("<th>" + type + "</th>");
+
+        for (var i = numMonths; i > 0; i--) {
+            header.append("<th>" + months[getMonth(i).getMonth()] + "</th>");
+        };
+    }
+
+    this.loadData = function(){
+        var navigation =  $('ul#navigation');
+
+        var filter = {
+            "client":navigation.attr('clientid'),
+            "campaign":navigation.attr('campaignid'),
+            "adgroup":navigation.attr('adgroupid'),
+            "keyword":'%',
+            "numMonths":numMonths
+        }
+
+        table.rows().remove().draw();
+
+       $.ajax({
+        url:"getTableData.php?cb=1",
+        data:filter,
+        method:"POST",
+        success:function(message){
+            data = formatData(JSON.parse(message));
+            console.log(data);
+            for (var i = data.length - 1; i >= 0; i--) {
+                table.row.add(data[i]).draw();
+            };
+        },
+        error: function(error){
+            console.log(error);
+        }
+    });
+    }
+
+    this.initTable = function(){
+        table = $('#main_table').DataTable( {
+            "data": [],
+            "columns": getColumns(),
+
+            "language": {"emptyTable": "Loading..."},
+            
+            'paging':false,
+            'info':false,
+            "searching":true,
+            "ordering": true,
+            "order": [[1, 'asc']]
+        } );
+        setRowClickListener();
+    }
+
+    this.formatData = function(data){
+        var date, prevdate, key, prevkey, datathismonth, dataprevmonth, impr;
+        for(var j=0;j<data.length;j++){
+            data[j]['tableData'] = {};
+            for(var i=numMonths;i>0;i--){
+                date = getMonth(i);
+                key = (date.getMonth()+1)+"/"+date.getFullYear();
+                if(typeof data[j]['data'][key] == "undefined"){
+                    data[j]['tableData'][key] = "  ";
+                }
+                else{
+                    datathismonth = data[j]['data'][key];
+                    if(datathismonth == 0){
+                        data[j]['tableData'][key] = "  ";
+                        continue;
+                    }
+                    prevdate = getMonth(i+1);
+                    prevkey = (prevdate.getMonth()+1)+"/"+prevdate.getFullYear();
+                    
+                    dataprevmonth = data[j]['data'][prevkey];
+
+                    if(datathismonth >= 7) bg = 'bg-green';
+                    else if(datathismonth >= 5) bg = 'bg-orange';
+                    else bg = 'bg-red';
+
+                    if(typeof dataprevmonth == 'undefined'){
+                        data[j]['tableData'][key] = 
+                            "<div class='row'>"+
+                                "<val>" + datathismonth + "</val>"+ 
+                                "<div class='circle " + bg + "'></div>"+
+                            "</div>"+ 
+                            "<div class='row'></div>";
+                    }
+                    else{
+                        impr = (datathismonth - dataprevmonth) / dataprevmonth;
+                        if(impr > 0) impr = "<green>+"+Math.round(impr * 100)+"%<green>";
+                        else if(impr == 0) impr = "0%";
+                        else if(impr < 0) impr = "<red>"+Math.round(impr * 100)+"%</red>";
+
+                        data[j]['tableData'][key] = 
+                            "<div class='row'>"+
+                                "<val>" + datathismonth + "</val>"+                         
+                                "<div class='circle " + bg + "'></div>"+                                        
+                            "<div class='row'>"+
+                                "<impr>" + impr + "</impr>" +
+                            "</div>";
+                    }
+                }
+
+            }
+        }
+        return data;   
+    }
+
+    this.getMonth = function(monthsBack){
+        var d       = new Date();
+        var month   = d.getMonth();
+        d.setMonth(month - monthsBack);
+        return d;
+    }
+
+    this.getColumns = function(){        
+        var columns = [
+                {
+                    "className":      'details-control',
+                    "orderable":      false,
+                    "data":           null,
+                    "defaultContent": ''
+                },
+                { "data": "name" ,'orderable':true, 'class':'itemGroup'}
+                ]
+        for(var i=numMonths;i>0;i--){
+            var date = getMonth(i);
+            columns.push({"data":"tableData."+(date.getMonth()+1)+"/"+date.getFullYear()});
+        }            
+        return columns;
+    }
+
+    this.setRowClickListener = function(){
+        $('#main_table tbody').on('click', '.itemGroup', function(){
+            var rowData     = table.row($(this).parent()).data();
+            var clientID    = rowData.clientID;
+            var campaignID  = rowData.campaignID;
+            var adgroupID   = rowData.adgroupID;
+            var keywordID   = rowData.keywordID;
+            var name        = rowData.name;
+
+            if(adgroupID != '%'){
+                $('ul#navigation').attr('adgroupID',adgroupID);
+                $('ul#navigation li#adgroup a').text(name).parent().show();
+            }
+            else if(campaignID != '%'){
+                $('ul#navigation').attr('campaignID',campaignID);
+                $('ul#navigation li#campaign a').text(name).parent().show();
+            }
+            else if(clientID != '%'){
+                $('ul#navigation').attr('clientID',clientID);
+                $('ul#navigation li#client a').text(name).parent().show();
+            }
+
+            loadData();
+        });
+    };
+
+    $('ul#navigation li#mcc').click(function(){
+        $('ul#navigation').attr('clientid','%').attr('campaignid','%').attr('adgroupid','%');
+        $('ul#navigation li#client, ul#navigation li#campaign, ul#navigation li#adgroup').hide();
+        loadData();
+    });
+
+    $('ul#navigation li#client').click(function(){
+        $('ul#navigation').attr('campaignid','%').attr('adgroupid','%');
+        $('ul#navigation li#campaign, ul#navigation li#adgroup').hide();
+        loadData();
+    });
+
+    $('ul#navigation li#campaign').click(function(){
+        $('ul#navigation').attr('adgroupid','%');
+        $('ul#navigation li#adgroup').hide();
+        loadData();
+    });
+
+</script>

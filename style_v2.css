@@ -1,0 +1,92 @@
+body{
+	width:80%;
+	margin:0 auto;
+}
+
+.itemGroup{
+	cursor: pointer;
+}
+
+/* css for navigation breadcrumbs */
+#navigation { 
+	list-style: none; 
+	overflow: hidden; 
+	font: 18px Helvetica, Arial, Sans-Serif;
+	padding: 0px;
+}
+#navigation li { 
+	float: left;
+	display:none; 
+}
+#navigation li a {
+	color: white;
+	text-decoration: none; 
+	padding: 10px 0 10px 40px;
+	background: hsla(240,85%,35%,1); 
+	position: relative; 
+	display: block;
+	float: left;
+	cursor:pointer;
+}
+#navigation li a:after { 
+	content: " "; 
+	display: block; 
+	width: 0; 
+	height: 0;
+	border-top: 50px solid transparent;           /* Go big on the size, and let overflow hide */
+	border-bottom: 50px solid transparent;
+	border-left: 30px solid hsla(240,85%,35%,1);
+	position: absolute;
+	top: 50%;
+	margin-top: -50px; 
+	left: 100%;
+	z-index: 2; 
+}
+#navigation li a:before { 
+	content: " "; 
+	display: block; 
+	width: 0; 
+	height: 0;
+	border-top: 50px solid transparent;       
+	border-bottom: 50px solid transparent;
+	border-left: 30px solid white;
+	position: absolute;
+	top: 50%;
+	margin-top: -50px; 
+	margin-left: 5px;
+	left: 100%;
+	z-index: 1; 
+}
+#navigation li#mcc {display:block;}
+#navigation li:nth-child(2) a       { background:        hsla(240,85%,50%,1); }
+#navigation li:nth-child(2) a:after { border-left-color: hsla(240,85%,50%,1); }
+#navigation li:nth-child(3) a       { background:        hsla(240,85%,70%,1); }
+#navigation li:nth-child(3) a:after { border-left-color: hsla(240,85%,70%,1); }
+#navigation li:nth-child(4) a       { background:        hsla(240,85%,80%,1); }
+#navigation li:nth-child(4) a:after { border-left-color: hsla(240,85%,80%,1); }
+
+#navigation li a:hover { background: hsla(240,85%,40%,1); }
+#navigation li a:hover:after { border-left-color: hsla(240,85%,40%,1) !important; }
+
+impr{
+	font-size: 0.8em;
+}
+
+.row{
+	min-height: 1em;
+}
+
+red{color:red;}
+green{color:green;}
+
+.circle{
+	width:10px;
+	height: 10px;
+	border-radius: 50%;
+	display: inline-block;
+	float:right;
+}
+
+.bg-red{background: red;}
+.bg-orange{background: orange;}
+.bg-green{background: green;}
